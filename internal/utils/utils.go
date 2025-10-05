@@ -74,7 +74,7 @@ func LoadUsage() error {
 		return err
 	}
 
-	totalSize = atomic.SwapInt64(&totalSize, usageData.TotalSize)
+	atomic.SwapInt64(&totalSize, usageData.TotalSize)
 	return nil
 }
 
