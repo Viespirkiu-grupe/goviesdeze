@@ -110,7 +110,8 @@ func DownloadURL(cfg *config.Config) gin.HandlerFunc {
 			}
 
 			// Update usage
-			utils.SetUsage(utils.GetUsage() + int64(len(body)))
+			// utils.SetUsage(utils.GetUsage() + int64(len(body)))
+			utils.AddUsage(int64(len(body)))
 
 			c.JSON(http.StatusOK, gin.H{
 				"md5":  md5sum,
@@ -170,7 +171,8 @@ func DownloadURL(cfg *config.Config) gin.HandlerFunc {
 
 			// Update usage
 			if stat, err := os.Stat(finalPath); err == nil {
-				utils.SetUsage(utils.GetUsage() + stat.Size())
+				// utils.SetUsage(utils.GetUsage() + stat.Size())
+				utils.AddUsage(stat.Size())
 				c.JSON(http.StatusOK, gin.H{
 					"md5":  md5sum,
 					"size": stat.Size(),

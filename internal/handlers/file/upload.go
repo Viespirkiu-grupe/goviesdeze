@@ -55,7 +55,9 @@ func UploadFile(cfg *config.Config) gin.HandlerFunc {
 
 			byteCount := int64(len(body))
 			totalSize := utils.GetUsage() - existingSize + byteCount
-			utils.SetUsage(totalSize)
+			// utils.SetUsage(totalSize)
+			utils.AddUsage(-existingSize)
+			utils.AddUsage(byteCount)
 
 			c.JSON(http.StatusOK, gin.H{
 				"uploaded":  filename,

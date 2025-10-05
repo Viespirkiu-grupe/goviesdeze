@@ -58,6 +58,12 @@ func SetUsage(size int64) error {
 	return saveUsage()
 }
 
+// AddUsage adds a specific value to the total disk usage
+func AddUsage(size int64) error {
+	atomic.AddInt64(&totalSize, size)
+	return saveUsage()
+}
+
 // LoadUsage loads disk usage from the usage.json file
 func LoadUsage() error {
 	data, err := os.ReadFile("./usage.json")
