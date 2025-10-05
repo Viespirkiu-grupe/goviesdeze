@@ -116,7 +116,3 @@ curl -H "Range: bytes=0-1023" \
 - [Gin](https://github.com/gin-gonic/gin) - HTTP web framework
 - [AWS SDK for Go](https://github.com/aws/aws-sdk-go) - S3 integration
 - [Filetype](https://github.com/h2non/filetype) - File type detection
-
-## License
-
-This project is licensed under the MIT License.
