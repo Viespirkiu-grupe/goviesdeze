@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 )
 
 // ShardPath creates a sharded path by using the first two characters of the filename as a subdirectory
@@ -48,12 +49,12 @@ var totalSize int64
 
 // GetUsage returns the current total disk usage in bytes
 func GetUsage() int64 {
-	return totalSize
+	return atomic.LoadInt64(&totalSize)
 }
 
 // SetUsage sets the total disk usage to a specific value
 func SetUsage(size int64) error {
-	totalSize = size
+	totalSize = atomic.SwapInt64(&totalSize, size)
 	return saveUsage()
 }
 
@@ -73,13 +74,13 @@ func LoadUsage() error {
 		return err
 	}
 
-	totalSize = usageData.TotalSize
+	totalSize = atomic.SwapInt64(&totalSize, usageData.TotalSize)
 	return nil
 }
 
 // saveUsage saves the current totalSize to the usage.json file
 func saveUsage() error {
-	usageData := UsageData{TotalSize: totalSize}
+	usageData := UsageData{TotalSize: atomic.LoadInt64(&totalSize)}
 	data, err := json.Marshal(usageData)
 	if err != nil {
 		return err
