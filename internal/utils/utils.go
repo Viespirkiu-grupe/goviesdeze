@@ -54,7 +54,7 @@ func GetUsage() int64 {
 
 // SetUsage sets the total disk usage to a specific value
 func SetUsage(size int64) error {
-	totalSize = atomic.SwapInt64(&totalSize, size)
+	atomic.SwapInt64(&totalSize, size)
 	return saveUsage()
 }
 
