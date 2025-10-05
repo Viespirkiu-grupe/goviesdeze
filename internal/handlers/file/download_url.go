@@ -45,27 +45,27 @@ func DownloadURL(cfg *config.Config) gin.HandlerFunc {
 		}
 
 		// Determine file extension
-		ext := filepath.Ext(req.URL)
-		if ext == "" {
-			contentType := resp.Header.Get("Content-Type")
-			if contentType != "" {
-				// Simple content type to extension mapping
-				switch {
-				case strings.Contains(contentType, "image/jpeg"):
-					ext = ".jpg"
-				case strings.Contains(contentType, "image/png"):
-					ext = ".png"
-				case strings.Contains(contentType, "image/gif"):
-					ext = ".gif"
-				case strings.Contains(contentType, "text/html"):
-					ext = ".html"
-				case strings.Contains(contentType, "text/plain"):
-					ext = ".txt"
-				default:
-					ext = ""
-				}
-			}
-		}
+		// ext := filepath.Ext(req.URL)
+		// if ext == "" {
+		// 	contentType := resp.Header.Get("Content-Type")
+		// 	if contentType != "" {
+		// 		// Simple content type to extension mapping
+		// 		switch {
+		// 		case strings.Contains(contentType, "image/jpeg"):
+		// 			ext = ".jpg"
+		// 		case strings.Contains(contentType, "image/png"):
+		// 			ext = ".png"
+		// 		case strings.Contains(contentType, "image/gif"):
+		// 			ext = ".gif"
+		// 		case strings.Contains(contentType, "text/html"):
+		// 			ext = ".html"
+		// 		case strings.Contains(contentType, "text/plain"):
+		// 			ext = ".txt"
+		// 		default:
+		// 			ext = ""
+		// 		}
+		// 	}
+		// }
 
 		if cfg.S3 {
 			// S3 storage logic
@@ -78,7 +78,7 @@ func DownloadURL(cfg *config.Config) gin.HandlerFunc {
 			// Calculate MD5 hash
 			hash := md5.Sum(body)
 			md5sum := fmt.Sprintf("%x", hash)
-			filename := md5sum + ext
+			filename := md5sum //+ ext
 			key := utils.ShardPath(filename, cfg.StoragePath)
 
 			// Check if file already exists
@@ -139,7 +139,7 @@ func DownloadURL(cfg *config.Config) gin.HandlerFunc {
 			tmpFile.Close()
 
 			md5sum := fmt.Sprintf("%x", hash.Sum(nil))
-			filename := md5sum + ext
+			filename := md5sum //+ ext
 			finalPath := utils.ShardPath(filename, cfg.StoragePath)
 
 			// Check if file already exists
