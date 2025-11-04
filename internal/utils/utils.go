@@ -28,8 +28,15 @@ func GenerateCandidatePaths(basePath string) []string {
 		candidates = append(candidates, strings.TrimSuffix(basePath, ".jpg")+".jpeg")
 	}
 
-	// Add extensionless version
 	ext := filepath.Ext(basePath)
+
+	// If the extension has uppercase letters, add lowercase variant
+	if ext != "" && ext != strings.ToLower(ext) {
+		lowerExtPath := strings.TrimSuffix(basePath, ext) + strings.ToLower(ext)
+		candidates = append(candidates, lowerExtPath)
+	}
+
+	// Add extensionless version
 	if ext != "" {
 		withoutExt := strings.TrimSuffix(basePath, ext)
 		candidates = append(candidates, withoutExt)
