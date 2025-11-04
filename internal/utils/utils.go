@@ -35,6 +35,7 @@ func GenerateCandidatePaths(basePath string) []string {
 		candidates = append(candidates, withoutExt)
 		candidates = append(candidates, withoutExt+".bin")
 		candidates = append(candidates, withoutExt+".php")
+		candidates = append(candidates, withoutExt+".null")
 	}
 
 	return candidates
