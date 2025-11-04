@@ -24,31 +24,40 @@ func DeleteFile(cfg *config.Config) gin.HandlerFunc {
 		candidates := utils.GenerateCandidatePaths(basePath)
 
 		if cfg.S3 {
-			// S3 deletion logic
-			key := candidates[0] // Use the first candidate as S3 object key
-
-			// Check if file exists and get its size
-			headInput := &s3.HeadObjectInput{
-				Bucket: aws.String(cfg.S3Bucket),
-				Key:    aws.String(key),
-			}
-
+			// Try deleting the first existing S3 object among candidates
+			var deletedKey string
 			var size int64
-			headOutput, err := cfg.S3Client.HeadObject(headInput)
-			if err != nil {
-				if strings.Contains(err.Error(), "NotFound") {
-					c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
+
+			for _, key := range candidates {
+				headInput := &s3.HeadObjectInput{
+					Bucket: aws.String(cfg.S3Bucket),
+					Key:    aws.String(key),
+				}
+
+				headOutput, err := cfg.S3Client.HeadObject(headInput)
+				if err != nil {
+					if strings.Contains(err.Error(), "NotFound") {
+						continue // try next candidate
+					}
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check file existence"})
 					return
 				}
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check file existence"})
+
+				// Found a valid object
+				size = aws.Int64Value(headOutput.ContentLength)
+				deletedKey = key
+				break
+			}
+
+			if deletedKey == "" {
+				c.JSON(http.StatusNotFound, gin.H{"error": "No matching file found"})
 				return
 			}
-			size = aws.Int64Value(headOutput.ContentLength)
 
 			// Delete the object
 			deleteInput := &s3.DeleteObjectInput{
 				Bucket: aws.String(cfg.S3Bucket),
-				Key:    aws.String(key),
+				Key:    aws.String(deletedKey),
 			}
 
 			if _, err := cfg.S3Client.DeleteObject(deleteInput); err != nil {
@@ -60,9 +69,10 @@ func DeleteFile(cfg *config.Config) gin.HandlerFunc {
 			utils.SetUsage(utils.GetUsage() - size)
 
 			c.JSON(http.StatusOK, gin.H{
-				"deleted":    filepath.Base(key),
-				"sizeFreed":  size,
+				"deleted":   filepath.Base(deletedKey),
+				"sizeFreed": size,
 			})
+
 		} else {
 			// Local filesystem deletion logic
 			var filePath string
