@@ -12,6 +12,9 @@ COPY internal internal
 RUN CGO_ENABLED=0 go build -o app .
 
 FROM alpine:latest
+
+RUN apk add --no-cache p7zip
+
 COPY --from=builder /temp/app /app
 
 WORKDIR /work
