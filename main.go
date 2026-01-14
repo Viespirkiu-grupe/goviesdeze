@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"os"
+	"os/exec"
+	"time"
 
 	"goviesdeze/internal/config"
 	"goviesdeze/internal/handlers"
@@ -12,7 +14,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func cleanTmp() {
+	for {
+		cmd := exec.Command("find", "/tmp", "-mindepth", "1", "-mmin", "+5", "-exec", "rm", "-rf", "{}", "+")
+		if err := cmd.Run(); err != nil {
+			log.Println("Error running find:", err)
+		}
+		time.Sleep(1 * time.Minute)
+	}
+}
+
 func main() {
+	go cleanTmp() // runs in background
+
 	// Load configuration
 	cfg := config.Load()
 
