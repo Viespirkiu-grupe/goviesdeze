@@ -13,6 +13,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
+	"time"
 
 	// "github.com/gen2brain/go-unarr"
 	// "github.com/gen2brain/go-unarr"
@@ -57,17 +59,17 @@ func detectArchiveType(b []byte) string {
 	return "unknown"
 }
 
-func IdentityFilesV2(archiveBytes []byte) ([]string, error) {
+func IdentityFilesV2(ctx context.Context, archiveBytes []byte) ([]string, error) {
 	switch detectArchiveType(archiveBytes) {
 
 	case "zip":
 		return listZip(archiveBytes)
 
 	case "7z":
-		return listWith7z(archiveBytes)
+		return listWith7z(ctx, archiveBytes)
 
 	default:
-		return IdentityFilesV3(archiveBytes)
+		return IdentityFilesV3(ctx, archiveBytes)
 	}
 }
 
@@ -86,17 +88,17 @@ func listZip(b []byte) ([]string, error) {
 	return out, nil
 }
 
-func GetFileFromArchiveV2(archiveBytes []byte, filename string) (io.ReadCloser, error) {
+func GetFileFromArchiveV2(ctx context.Context, archiveBytes []byte, filename string) (io.ReadCloser, error) {
 	switch detectArchiveType(archiveBytes) {
 
 	case "zip":
 		return getFromZip(archiveBytes, filename)
 
 	case "7z":
-		return getWith7z(archiveBytes, filename)
+		return getWith7z(ctx, archiveBytes, filename)
 
 	default:
-		return GetFileFromArchiveV3(archiveBytes, filename)
+		return GetFileFromArchiveV3(ctx, archiveBytes, filename)
 	}
 }
 
@@ -114,15 +116,23 @@ func getFromZip(b []byte, filename string) (io.ReadCloser, error) {
 	return nil, fmt.Errorf("failas nerastas: %s", filename)
 }
 
-func listWith7z(b []byte) ([]string, error) {
+func listWith7z(rctx context.Context, b []byte) ([]string, error) {
 	tmp, err := os.CreateTemp("", "arc-*")
 	if err != nil {
 		return nil, err
 	}
 	defer os.Remove(tmp.Name())
 	os.WriteFile(tmp.Name(), b, 0644)
+	ctx, cancel := context.WithTimeout(rctx, 15*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "7z", "l", "-slt", tmp.Name())
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Setpgid: true,
+	}
 
-	cmd := exec.Command("7z", "l", "-slt", tmp.Name())
+	cmd.Cancel = func() error {
+		return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+	}
 	out, err := cmd.Output()
 	if err != nil {
 		return nil, err
@@ -141,19 +151,29 @@ func listWith7z(b []byte) ([]string, error) {
 	}
 	return files, scanner.Err()
 }
-func getWith7z(b []byte, filename string) (io.ReadCloser, error) {
+func getWith7z(rctx context.Context, b []byte, filename string) (io.ReadCloser, error) {
 	tmp, err := os.CreateTemp("", "arc-*")
 	if err != nil {
 		return nil, err
 	}
 	os.WriteFile(tmp.Name(), b, 0644)
-
-	cmd := exec.Command(
+	defer os.Remove(tmp.Name())
+	ctx, cancel := context.WithTimeout(rctx, 15*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(
+		ctx,
 		"7z", "x",
 		"-so",
 		tmp.Name(),
 		filename,
 	)
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Setpgid: true,
+	}
+
+	cmd.Cancel = func() error {
+		return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+	}
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -181,8 +201,8 @@ type closerFunc func() error
 
 func (c closerFunc) Close() error { return c() }
 
-func IdentityFilesV3(archiveBytes []byte) ([]string, error) {
-	format, stream, err := archives.Identify(context.TODO(), "file", bytes.NewReader(archiveBytes))
+func IdentityFilesV3(rctx context.Context, archiveBytes []byte) ([]string, error) {
+	format, stream, err := archives.Identify(rctx, "file", bytes.NewReader(archiveBytes))
 	if err != nil {
 		return nil, fmt.Errorf("nepavyko atidaryti archyvo: %w", err)
 	}
@@ -204,9 +224,9 @@ func IdentityFilesV3(archiveBytes []byte) ([]string, error) {
 	return names, nil
 }
 
-func GetFileFromArchiveV3(archiveBytes []byte, filename string) (io.ReadCloser, error) {
+func GetFileFromArchiveV3(rctx context.Context, archiveBytes []byte, filename string) (io.ReadCloser, error) {
 	var buf bytes.Buffer
-	format, stream, err := archives.Identify(context.TODO(), filename, bytes.NewReader(archiveBytes))
+	format, stream, err := archives.Identify(rctx, filename, bytes.NewReader(archiveBytes))
 	if err != nil {
 		return nil, fmt.Errorf("nepavyko atidaryti archyvo: %w", err)
 	}

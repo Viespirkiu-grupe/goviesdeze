@@ -74,7 +74,7 @@ func GetFile(cfg *config.Config) gin.HandlerFunc {
 				return
 			}
 
-			files, err := ziputil.IdentityFilesV2(buf)
+			files, err := ziputil.IdentityFilesV2(c.Request.Context(), buf)
 			if err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid archive"})
 				return
@@ -86,7 +86,7 @@ func GetFile(cfg *config.Config) gin.HandlerFunc {
 				return
 			}
 
-			fileReader, err := ziputil.GetFileFromArchiveV2(buf, best)
+			fileReader, err := ziputil.GetFileFromArchiveV2(c.Request.Context(), buf, best)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Error extracting file"})
 				return
