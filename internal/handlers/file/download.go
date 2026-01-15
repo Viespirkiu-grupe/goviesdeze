@@ -91,6 +91,7 @@ func GetFile(cfg *config.Config) gin.HandlerFunc {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Error extracting file"})
 				return
 			}
+			defer fileReader.Close()
 
 			// Wrap in a bytes.Reader so it implements both io.Reader and io.Seeker
 			buf2, _ := io.ReadAll(fileReader)

@@ -159,7 +159,7 @@ func getWith7z(rctx context.Context, b []byte, filename string) (io.ReadCloser, 
 	os.WriteFile(tmp.Name(), b, 0644)
 	defer os.Remove(tmp.Name())
 	ctx, cancel := context.WithTimeout(rctx, 15*time.Second)
-	defer cancel()
+
 	cmd := exec.CommandContext(
 		ctx,
 		"7z", "x",
@@ -190,6 +190,7 @@ func getWith7z(rctx context.Context, b []byte, filename string) (io.ReadCloser, 
 	}{
 		Reader: stdout,
 		Closer: closerFunc(func() error {
+			defer cancel()
 			cmd.Wait()
 			os.Remove(tmp.Name())
 			return nil
