@@ -65,8 +65,8 @@ func IdentityFilesV2(ctx context.Context, archiveBytes []byte) ([]string, error)
 	case "zip":
 		return listZip(archiveBytes)
 
-	case "7z":
-		return listWith7z(ctx, archiveBytes)
+	// case "7z":
+	// 	return listWith7z(ctx, archiveBytes)
 
 	default:
 		return IdentityFilesV3(ctx, archiveBytes)
