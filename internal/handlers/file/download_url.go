@@ -16,7 +16,8 @@ import (
 
 // DownloadURLRequest represents the request body for download-url endpoint
 type DownloadURLRequest struct {
-	URL string `json:"url" binding:"required"`
+	URL             string `json:"url" binding:"required"`
+	FollowRedirects bool   `json:"followRedirects"` // defaults to false
 }
 
 // DownloadURL handles downloading files from URLs and storing them
@@ -28,8 +29,17 @@ func DownloadURL(cfg *config.Config) gin.HandlerFunc {
 			return
 		}
 
-		// Download the file from URL
-		resp, err := http.Get(req.URL)
+		// Create custom HTTP client
+		client := &http.Client{}
+		if !req.FollowRedirects {
+			client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+				// stop redirects
+				return http.ErrUseLastResponse
+			}
+		}
+
+		// Download the file
+		resp, err := client.Get(req.URL)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch URL"})
 			return
@@ -37,7 +47,14 @@ func DownloadURL(cfg *config.Config) gin.HandlerFunc {
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to fetch %s: %s", req.URL, resp.Status)})
+			errMsg := fmt.Sprintf("Failed to fetch URL %s: status %d (%s)", req.URL, resp.StatusCode, resp.Status)
+			if resp.StatusCode >= 300 && resp.StatusCode < 400 {
+				loc := resp.Header.Get("Location")
+				if loc != "" {
+					errMsg += fmt.Sprintf(", redirect to %s", loc)
+				}
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": errMsg})
 			return
 		}
 
