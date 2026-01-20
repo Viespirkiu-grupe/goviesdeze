@@ -94,8 +94,8 @@ func GetFileFromArchiveV2(ctx context.Context, archiveBytes []byte, filename str
 	case "zip":
 		return getFromZip(archiveBytes, filename)
 
-	case "7z":
-		return getWith7z(ctx, archiveBytes, filename)
+	// case "7z":
+	// 	return getWith7z(ctx, archiveBytes, filename)
 
 	default:
 		return GetFileFromArchiveV3(ctx, archiveBytes, filename)
