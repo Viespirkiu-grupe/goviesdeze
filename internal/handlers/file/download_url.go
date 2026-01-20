@@ -43,7 +43,7 @@ func DownloadURL(cfg *config.Config) gin.HandlerFunc {
 
 		// Local filesystem storage logic
 		// Create temporary file
-		tmpFile, err := os.CreateTemp("", "tmp_*")
+		tmpFile, err := os.CreateTemp(cfg.StoragePath, "tmp_*")
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create temporary file"})
 			return
