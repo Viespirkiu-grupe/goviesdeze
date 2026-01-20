@@ -186,7 +186,6 @@ func getWith7z(rctx context.Context, b []byte, filename string) (io.ReadCloser, 
 		return nil, err
 	}
 
-	go io.Copy(os.Stdout, stdout)
 	go io.Copy(os.Stderr, stderr)
 
 	if err := cmd.Start(); err != nil {
